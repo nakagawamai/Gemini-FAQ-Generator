@@ -329,6 +329,7 @@ function gemini_faq_get_prompts() {
         'default'      => '以下のテキストに基づいて、想定される質問と回答のペアを5つ作成してください。' . $common_instruction,
         'professional' => '以下の記事を専門家の視点から分析し、読者が抱くであろう重要な質問と、それに対する明確かつ簡潔な回答を5組生成してください。' . $common_instruction,
         'beginner'     => 'この記事の内容を初めて読む人でも理解できるように、基本的な質問と簡単な言葉での回答を5ペア作成してください。' . $common_instruction,
+        'seo'          => '以下のテキストのSEOを意識し、検索エンジンで上位表示されやすいような、具体的なキーワードを含んだ質問と回答のペアを5つ生成してください。' . $common_instruction,
     );
 }
 
@@ -415,7 +416,6 @@ function gemini_faq_register_settings() {
         }
     }, 10, 2);
 }
-}
 add_action( 'admin_init', 'gemini_faq_register_settings' );
 
 function gemini_faq_api_key_callback() {
@@ -435,6 +435,7 @@ function gemini_faq_prompt_select_callback() {
         'default' => '標準',
         'professional' => '専門家風',
         'beginner' => '初心者向け',
+        'seo' => 'SEOライク',
     );
 
     echo '<select name="gemini_faq_prompt_select">';
