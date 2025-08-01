@@ -339,71 +339,6 @@ function gemini_faq_meta_box_callback( $post ) {
 // メタボックスのデータを保存
 function gemini_faq_save_meta_box_data( $post_id ) {
     // ノンスを検証
-    if ( ! isset( $_POST['gemini_faq_meta_box_nonce'] ) ) {
-        return;
-    }
-    if ( ! wp_verify_nonce( $_POST['gemini_faq_meta_box_nonce'], 'gemini_faq_save_meta_box_data' ) ) {
-        return;
-    }
-
-    // 自動保存の場合は何もしない
-    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-        return;
-    }
-
-    // ユーザー権限をチェック
-    if ( isset( $_POST['post_type'] ) && 'page' == $_POST['post_type'] ) {
-        if ( ! current_user_can( 'edit_page', $post_id ) ) {
-            return;
-        }
-    } else {
-        if ( ! current_user_can( 'edit_post', $post_id ) ) {
-            return;
-        }
-    }
-
-    // データをサニタイズして保存
-    if ( isset( $_POST['gemini_faq_prompt_select_per_post'] ) ) {
-        $my_data = sanitize_key( $_POST['gemini_faq_prompt_select_per_post'] );
-        update_post_meta( $post_id, '_gemini_faq_prompt_select', $my_data );
-    }
-}
-add_action( 'save_post', 'gemini_faq_save_meta_box_data' );
-
-// FAQ編集用のメタボックスを追加
-function gemini_faq_add_editor_meta_box() {
-    $public_post_types = apply_filters( 'gemini_faq_public_post_types', array( 'post', 'page' ) );
-    add_meta_box(
-        'gemini_faq_editor',
-        'Gemini FAQ Editor',
-        'gemini_faq_editor_meta_box_callback',
-        $public_post_types,
-        'normal', // 表示位置を'side'から'normal'（メインカラム）に変更
-        'high'
-    );
-}
-add_action( 'add_meta_boxes', 'gemini_faq_add_editor_meta_box' );
-
-// FAQ編集メタボックスのコンテンツ
-function gemini_faq_editor_meta_box_callback( $post ) {
-    // ノンスはプロンプト設定のメタボックスで共通のものを利用
-
-    $faq_content = get_post_meta( $post->ID, '_gemini_faq_content', true );
-    $is_generated = ! empty( $faq_content );
-
-    echo '<p>AIが生成したFAQはここに表示され、手動で編集・保存できます。</p>';
-    echo '<textarea name="gemini_faq_content" id="gemini_faq_content_textarea" style="width:100%; height:250px;">' . esc_textarea( $faq_content ) . '</textarea>';
-
-    echo '<div style="margin-top:10px;">';
-    echo '<button type="button" id="gemini_faq_regenerate_button" class="button">FAQを再生成する</button>';
-    echo '<span id="gemini_faq_spinner" class="spinner" style="float:none; margin-left: 5px;"></span>';
-    echo '</div>';
-    echo '<p class="description">注意: 「FAQを再生成する」ボタンを押すと、現在の編集内容は破棄され、新しいFAQが生成されます。</p>';
-}
-
-// メタボックス（プロンプト設定とFAQエディタ）のデータを保存
-function gemini_faq_save_meta_box_data( $post_id ) {
-    // ノンスを検証
     if ( ! isset( $_POST['gemini_faq_meta_box_nonce'] ) || ! wp_verify_nonce( $_POST['gemini_faq_meta_box_nonce'], 'gemini_faq_save_meta_box_data' ) ) {
         return;
     }
@@ -431,6 +366,7 @@ function gemini_faq_save_meta_box_data( $post_id ) {
         update_post_meta( $post_id, '_gemini_faq_content', $faq_data );
     }
 }
+add_action( 'save_post', 'gemini_faq_save_meta_box_data' );
 
 // 管理画面用のスクリプトとAJAXハンドラ
 function gemini_faq_admin_enqueue_scripts($hook) {
