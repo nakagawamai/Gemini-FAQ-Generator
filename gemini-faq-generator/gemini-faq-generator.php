@@ -15,7 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // プラグインのアクティベーション時に実行される関数
 function gemini_faq_generator_activate() {
-    // 将来的に必要な初期設定があればここに記述
+    // キャッシュバージョンの初期値を設定
+    if ( false === get_option( 'gemini_faq_prompt_version' ) ) {
+        add_option( 'gemini_faq_prompt_version', time() );
+    }
 }
 register_activation_hook( __FILE__, 'gemini_faq_generator_activate' );
 
@@ -88,8 +91,9 @@ function _gemini_faq_generate_and_cache_for_url($current_page_url, $post_id) {
         return false;
     }
 
-    // キャッシュキーの生成 (URLと投稿IDを組み合わせる)
-    $cache_key = 'gemini_faq_' . md5( $current_page_url . $post_id );
+    // キャッシュキーの生成 (URL、投稿ID、プロンプトバージョンを組み合わせる)
+    $prompt_version = get_option( 'gemini_faq_prompt_version', time() );
+    $cache_key = 'gemini_faq_' . md5( $current_page_url . $post_id . $prompt_version );
     $cache_duration_days = get_option( 'gemini_faq_cache_duration', 1 ); // 設定値を取得、なければ1日
 
     // キャッシュがある場合はそれを返す
@@ -380,6 +384,8 @@ function gemini_faq_register_settings() {
             'type' => 'string',
             'sanitize_callback' => 'sanitize_key',
             'default' => 'default',
+            'show_in_rest' => true, // REST APIで利用可能に
+            'description' => 'The selected prompt for FAQ generation.',
         )
     );
 
@@ -390,6 +396,25 @@ function gemini_faq_register_settings() {
         'gemini-faq-settings',
         'gemini_faq_api_section'
     );
+
+    // プロンプトバージョン管理
+    register_setting(
+        'gemini_faq_options_group',
+        'gemini_faq_prompt_version',
+        array(
+            'type' => 'integer',
+            'sanitize_callback' => 'absint',
+            'default' => time(),
+        )
+    );
+
+    // プロンプト設定が更新されたら、バージョンを更新する
+    add_action('update_option_gemini_faq_prompt_select', function($old_value, $value) {
+        if ($old_value !== $value) {
+            update_option('gemini_faq_prompt_version', time());
+        }
+    }, 10, 2);
+}
 }
 add_action( 'admin_init', 'gemini_faq_register_settings' );
 
