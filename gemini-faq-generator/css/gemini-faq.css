@@ -1,0 +1,55 @@
+/* FAQアコーディオンの全体的なコンテナ */
+.faq-accordion {
+    width: 100%;
+    margin: 0 auto;
+    border-top: 1px solid #ccc; /* 最初のアコーディオン項目の上部に枠線 */
+}
+
+/* 各FAQ項目 */
+.faq-item {
+    border-bottom: 1px solid #ccc; /* 各アコーディオン項目の下部に枠線 */
+    border-radius: 0; /* 角の丸みなし */
+}
+
+/* 質問部分のボタン */
+.faq-question-button {
+    background-color: #eeeeee; /* 質問部分の背景色：薄いグレー */
+    color: #333;
+    padding: 15px 20px;
+    width: 100%;
+    text-align: left;
+    border: none; /* ボタンのデフォルトの枠線を削除 */
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between; /* 質問テキストとアイコンを左右に配置 */
+    align-items: center; /* 垂直方向中央揃え */
+    font-size: 1.1em;
+    font-weight: bold;
+    box-sizing: border-box; /* paddingをwidthに含める */
+    transition: background-color 0.2s ease; /* ホバー時のアニメーション */
+}
+
+.faq-question-button:hover {
+    background-color: #e0e0e0; /* ホバー時の背景色 */
+}
+
+/* トグルアイコン */
+.faq-toggle-icon {
+    font-size: 1.5em; /* アイコンのサイズ */
+    font-weight: normal; /* アイコンの太さ */
+    margin-left: 10px;
+    line-height: 1; /* アイコンの行の高さを調整 */
+}
+
+/* 回答内容のコンテナ */
+.faq-answer-content {
+    background-color: #fafafa; /* 回答部分の背景色：ほぼ白 */
+    max-height: 0; /* 初期状態では非表示 */
+    overflow: hidden; /* 内容がはみ出さないように隠す */
+    transition: max-height 0.3s ease-out; /* paddingのトランジションを削除 */
+}
+
+/* アクティブ（開いている）状態のスタイル */
+.faq-item.active .faq-answer-content {
+    padding: 15px 20px; /* 開いた時のパディング (上 右 下 左) */
+}
