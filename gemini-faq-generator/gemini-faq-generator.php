@@ -91,9 +91,10 @@ function _gemini_faq_generate_and_cache_for_url($current_page_url, $post_id) {
         return false;
     }
 
-    // キャッシュキーの生成 (URL、投稿ID、プロンプトバージョンを組み合わせる)
+    // キャッシュキーの生成 (URL、投稿ID、プロンプトバージョン、記事ごとの設定を組み合わせる)
     $prompt_version = get_option( 'gemini_faq_prompt_version', time() );
-    $cache_key = 'gemini_faq_' . md5( $current_page_url . $post_id . $prompt_version );
+    $post_prompt_setting = get_post_meta( $post_id, '_gemini_faq_prompt_select', true );
+    $cache_key = 'gemini_faq_' . md5( $current_page_url . $post_id . $prompt_version . $post_prompt_setting );
     $cache_duration_days = get_option( 'gemini_faq_cache_duration', 1 ); // 設定値を取得、なければ1日
 
     // キャッシュがある場合はそれを返す
@@ -123,8 +124,12 @@ function _gemini_faq_generate_and_cache_for_url($current_page_url, $post_id) {
         return false;
     }
 
-    // プロンプトの選択
-    $selected_prompt_key = get_option( 'gemini_faq_prompt_select', 'default' );
+    // プロンプトの選択（記事ごとの設定を優先）
+    $selected_prompt_key = get_post_meta( $post_id, '_gemini_faq_prompt_select', true );
+    if ( empty( $selected_prompt_key ) || $selected_prompt_key === 'site_default' ) {
+        $selected_prompt_key = get_option( 'gemini_faq_prompt_select', 'default' );
+    }
+
     $prompts = gemini_faq_get_prompts();
     $prompt_text = isset($prompts[$selected_prompt_key]) ? $prompts[$selected_prompt_key] : $prompts['default'];
 
@@ -294,6 +299,89 @@ function gemini_faq_generate_on_post_save( $post_id, $post, $update ) {
     }
 }
 add_action( 'save_post', 'gemini_faq_generate_on_post_save', 10, 3 );
+
+// 投稿ページにメタボックスを追加
+function gemini_faq_add_meta_box() {
+    $public_post_types = apply_filters( 'gemini_faq_public_post_types', array( 'post', 'page' ) );
+    add_meta_box(
+        'gemini_faq_prompt_settings',
+        'Gemini FAQ プロンプト設定',
+        'gemini_faq_meta_box_callback',
+        $public_post_types, // 'post'や'page'など、ショートコードを許可する投稿タイプ
+        'side',
+        'default'
+    );
+}
+add_action( 'add_meta_boxes', 'gemini_faq_add_meta_box' );
+
+// メタボックスのコンテンツを表示
+function gemini_faq_meta_box_callback( $post ) {
+    // ノンスフィールドを追加してセキュリティを確保
+    wp_nonce_field( 'gemini_faq_save_meta_box_data', 'gemini_faq_meta_box_nonce' );
+
+    // 保存されている値を取得
+    $selected_prompt = get_post_meta( $post->ID, '_gemini_faq_prompt_select', true );
+    if ( empty( $selected_prompt ) ) {
+        $selected_prompt = 'site_default'; // デフォルト値
+    }
+
+    $prompts = gemini_faq_get_prompts();
+    $prompt_titles = array(
+        'default' => '標準',
+        'professional' => '専門家風',
+        'beginner' => '初心者向け',
+        'seo' => 'SEOライク',
+    );
+
+    echo '<p>この記事のFAQを生成する際のプロンプトを選択します。</p>';
+    echo '<select name="gemini_faq_prompt_select_per_post" id="gemini_faq_prompt_select_per_post" style="width:100%;">';
+    
+    // サイトデフォルトの選択肢
+    $site_default_prompt_key = get_option('gemini_faq_prompt_select', 'default');
+    $site_default_prompt_title = isset($prompt_titles[$site_default_prompt_key]) ? $prompt_titles[$site_default_prompt_key] : ucfirst($site_default_prompt_key);
+    echo '<option value="site_default"' . selected( $selected_prompt, 'site_default', false ) . '>サイトのデフォルト設定 (' . esc_html($site_default_prompt_title) . ')</option>';
+
+    // 個別のプロンプト選択肢
+    foreach ( $prompts as $key => $prompt_text ) {
+        $title = isset($prompt_titles[$key]) ? $prompt_titles[$key] : ucfirst($key);
+        echo '<option value="' . esc_attr( $key ) . '"' . selected( $selected_prompt, $key, false ) . '>' . esc_html( $title ) . '</option>';
+    }
+    echo '</select>';
+}
+
+// メタボックスのデータを保存
+function gemini_faq_save_meta_box_data( $post_id ) {
+    // ノンスを検証
+    if ( ! isset( $_POST['gemini_faq_meta_box_nonce'] ) ) {
+        return;
+    }
+    if ( ! wp_verify_nonce( $_POST['gemini_faq_meta_box_nonce'], 'gemini_faq_save_meta_box_data' ) ) {
+        return;
+    }
+
+    // 自動保存の場合は何もしない
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+
+    // ユーザー権限をチェック
+    if ( isset( $_POST['post_type'] ) && 'page' == $_POST['post_type'] ) {
+        if ( ! current_user_can( 'edit_page', $post_id ) ) {
+            return;
+        }
+    } else {
+        if ( ! current_user_can( 'edit_post', $post_id ) ) {
+            return;
+        }
+    }
+
+    // データをサニタイズして保存
+    if ( isset( $_POST['gemini_faq_prompt_select_per_post'] ) ) {
+        $my_data = sanitize_key( $_POST['gemini_faq_prompt_select_per_post'] );
+        update_post_meta( $post_id, '_gemini_faq_prompt_select', $my_data );
+    }
+}
+add_action( 'save_post', 'gemini_faq_save_meta_box_data' );
 
 // プラグイン設定ページ（APIキー入力用）
 function gemini_faq_settings_page() {
