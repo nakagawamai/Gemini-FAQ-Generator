@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Gemini FAQ Generator
- * Plugin URI:  https://mai.kosodante.com/gemini-faq-generator
+ * Plugin URI:  https://github.com/nakagawamai/Gemini-FAQ-Generator
  * Description: Automatically generates FAQs for your WordPress posts/pages using Google Gemini API.
  * Version:     1.0.0
  * Author:      Mai Nakagawa
@@ -119,6 +119,11 @@ function _gemini_faq_generate_and_cache_for_url($current_page_url, $post_id) {
         return false;
     }
 
+    // プロンプトの選択
+    $selected_prompt_key = get_option( 'gemini_faq_prompt_select', 'default' );
+    $prompts = gemini_faq_get_prompts();
+    $prompt_text = isset($prompts[$selected_prompt_key]) ? $prompts[$selected_prompt_key] : $prompts['default'];
+
     // Gemini API呼び出し
     $gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $api_key;
     $headers = array(
@@ -128,7 +133,7 @@ function _gemini_faq_generate_and_cache_for_url($current_page_url, $post_id) {
         'contents' => array(
             array(
                 'parts' => array(
-                    array('text' => "以下のテキストに基づいて、想定される質問と回答のペアを5つ作成してください.\n各ペアは、必ず\"Q: \"で始まる質問と\"A: \"で始まる回答の形式にしてください.\n\n---\n" . $text_content . "\n---"),
+                    array('text' => $prompt_text . "\n\n---\n" . $text_content . "\n---"),
                 ),
             ),
         ),
@@ -314,6 +319,15 @@ function gemini_faq_settings_page_content() {
     <?php
 }
 
+function gemini_faq_get_prompts() {
+    $common_instruction = '各ペアは、必ず"Q: "で始まる質問と"A: "で始まる回答の形式にしてください。';
+    return array(
+        'default'      => '以下のテキストに基づいて、想定される質問と回答のペアを5つ作成してください。' . $common_instruction,
+        'professional' => '以下の記事を専門家の視点から分析し、読者が抱くであろう重要な質問と、それに対する明確かつ簡潔な回答を5組生成してください。' . $common_instruction,
+        'beginner'     => 'この記事の内容を初めて読む人でも理解できるように、基本的な質問と簡単な言葉での回答を5ペア作成してください。' . $common_instruction,
+    );
+}
+
 function gemini_faq_register_settings() {
     register_setting(
         'gemini_faq_options_group',
@@ -357,6 +371,25 @@ function gemini_faq_register_settings() {
         'gemini-faq-settings',
         'gemini_faq_api_section'
     );
+
+    // プロンプト選択設定
+    register_setting(
+        'gemini_faq_options_group',
+        'gemini_faq_prompt_select',
+        array(
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_key',
+            'default' => 'default',
+        )
+    );
+
+    add_settings_field(
+        'gemini_faq_prompt_select_field',
+        '生成プロンプトの選択',
+        'gemini_faq_prompt_select_callback',
+        'gemini-faq-settings',
+        'gemini_faq_api_section'
+    );
 }
 add_action( 'admin_init', 'gemini_faq_register_settings' );
 
@@ -368,4 +401,22 @@ function gemini_faq_api_key_callback() {
 function gemini_faq_cache_duration_callback() {
     $cache_duration = get_option( 'gemini_faq_cache_duration', 1 ); // デフォルトは1日
     echo '<input type="number" name="gemini_faq_cache_duration" value="' . esc_attr( $cache_duration ) . '" class="small-text" min="1" /> 日';
+}
+
+function gemini_faq_prompt_select_callback() {
+    $prompts = gemini_faq_get_prompts();
+    $selected_prompt = get_option( 'gemini_faq_prompt_select', 'default' );
+    $prompt_titles = array(
+        'default' => '標準',
+        'professional' => '専門家風',
+        'beginner' => '初心者向け',
+    );
+
+    echo '<select name="gemini_faq_prompt_select">';
+    foreach ( $prompts as $key => $prompt_text ) {
+        $title = isset($prompt_titles[$key]) ? $prompt_titles[$key] : ucfirst($key);
+        echo '<option value="' . esc_attr( $key ) . '"' . selected( $selected_prompt, $key, false ) . '>' . esc_html( $title ) . '</option>';
+    }
+    echo '</select>';
+    echo '<p class="description">FAQを生成する際に使用するプロンプトのスタイルを選択します。</p>';
 }
