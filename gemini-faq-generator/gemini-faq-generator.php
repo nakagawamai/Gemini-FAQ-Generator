@@ -154,7 +154,7 @@ add_action( 'wp_enqueue_scripts', 'gemini_faq_enqueue_scripts' );
  * @param int $post_id 関連する投稿ID
  * @return array|false 生成されたFAQの配列、または失敗した場合はfalse
  */
-function _gemini_faq_generate_and_cache_for_url($current_page_url, $post_id) {
+function _gemini_faq_generate_and_cache_for_url($current_page_url, $post_id, $post_content_override = null) {
     $api_key = get_option( 'gemini_faq_api_key' );
     if ( empty( $api_key ) ) {
         error_log( 'Gemini FAQ: API Key is not set.' );
@@ -176,16 +176,23 @@ function _gemini_faq_generate_and_cache_for_url($current_page_url, $post_id) {
 
     error_log('Gemini FAQ: Cache miss for ' . $current_page_url . '. Generating new FAQ.');
 
-    // キャッシュがない場合、コンテンツを取得してGemini APIを呼び出す
-    $html_content = wp_remote_retrieve_body( wp_remote_get( $current_page_url, array( 'timeout' => 10 ) ) );
+    $text_content = '';
+    if ( ! is_null( $post_content_override ) ) {
+        // 直接コンテンツが渡された場合、それを優先
+        $text_content = $post_content_override;
+    } else {
+        // コンテンツが渡されなかった場合、URLから取得
+        $html_content = wp_remote_retrieve_body( wp_remote_get( $current_page_url, array( 'timeout' => 10 ) ) );
 
-    if ( is_wp_error( $html_content ) || empty( $html_content ) ) {
-        error_log( 'Gemini FAQ: Failed to fetch page content for ' . $current_page_url );
-        return false;
+        if ( is_wp_error( $html_content ) || empty( $html_content ) ) {
+            error_log( 'Gemini FAQ: Failed to fetch page content for ' . $current_page_url );
+            return false;
+        }
+
+        // HTMLからテキストを抽出 (簡易版)
+        $text_content = strip_tags( $html_content );
     }
 
-    // HTMLからテキストを抽出 (簡易版)
-    $text_content = strip_tags( $html_content );
     $text_content = preg_replace( '/\s+/', ' ', $text_content ); // 複数の空白を単一の空白に
     $text_content = mb_substr( $text_content, 0, 5000 ); // Gemini APIのトークン制限を考慮し、最大5000文字に制限
 
@@ -510,9 +517,22 @@ function gemini_faq_ajax_regenerate_handler() {
     if ( $post_id === 0 ) {
         wp_send_json_error( '無効な投稿IDです。' );
     }
+
+    $post_obj = get_post( $post_id );
+    if ( ! $post_obj ) {
+        wp_send_json_error( '投稿が見つかりませんでした。' );
+    }
+
+    // 投稿のコンテンツを取得
+    $post_content = $post_obj->post_content;
+    if ( empty( $post_content ) ) {
+        wp_send_json_error( '投稿コンテンツが空です。' );
+    }
+
     $current_page_url = get_permalink( $post_id );
     if ( ! $current_page_url ) {
-        wp_send_json_error( '投稿のパーマリンクが取得できませんでした。' );
+        // パーマリンクが取得できない場合でも、コンテンツがあれば処理を続行
+        $current_page_url = ''; // 空文字列を設定
     }
 
     // 既存のキャッシュを削除して再生成を強制
@@ -521,8 +541,14 @@ function gemini_faq_ajax_regenerate_handler() {
     $cache_key = 'gemini_faq_' . md5( $current_page_url . $post_id . $prompt_version . $post_prompt_setting );
     delete_transient($cache_key);
 
-    // FAQを生成（この関数は内部でキャッシュと投稿メタを更新する）
-    _gemini_faq_generate_and_cache_for_url( $current_page_url, $post_id );
+    // FAQを生成（投稿コンテンツを直接渡す）
+    $result = _gemini_faq_generate_and_cache_for_url( $current_page_url, $post_id, $post_content );
+
+    if ( false === $result || !isset($result['faqs']) || !is_array($result['faqs']) ) {
+        wp_send_json_error( 'Failed to generate or retrieve FAQ data.' );
+    }
+
+    // 更新された投稿メタから新しいFAQコンテンツを取得
     $new_faq_content = get_post_meta( $post_id, '_gemini_faq_content', true );
     if ( empty( $new_faq_content ) ) {
         wp_send_json_error( '生成されたFAQコンテンツの取得に失敗しました。' );
