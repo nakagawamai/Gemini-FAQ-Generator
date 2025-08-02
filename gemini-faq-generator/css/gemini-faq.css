@@ -2,9 +2,10 @@
 #gemini-faq-container, .gemini-faq-wrapper {
     width: 100%;
     margin: 20px auto;
-    border-top: 1px solid #e0e0e0;
 }
-
+.gemini-faq-wrapper h2{
+    margin-bottom: 20px;
+}
 /* 各FAQ項目 (<details>タグ) */
 .gemini-faq-item, details {
     border-bottom: 1px solid #e0e0e0;
@@ -15,7 +16,6 @@
     background-color: #f7f7f7; /* 背景色を少しだけつける */
     color: #333;
     padding: 18px 20px;
-    width: 100%;
     text-align: left;
     border: none;
     cursor: pointer;
