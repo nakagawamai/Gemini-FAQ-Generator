@@ -377,32 +377,23 @@ add_action( 'save_post', 'gemini_faq_generate_on_post_save', 10, 3 );
 function gemini_faq_add_meta_boxes() {
     $public_post_types = apply_filters( 'gemini_faq_public_post_types', array( 'post', 'page' ) );
 
-    // プロンプト設定メタボックス
+    // 統合されたメタボックス
     add_meta_box(
-        'gemini_faq_prompt_settings',
-        'Gemini FAQ プロンプト設定',
-        'gemini_faq_prompt_meta_box_callback',
+        'gemini_faq_combined_settings',
+        'Gemini FAQ 設定とエディタ',
+        'gemini_faq_combined_meta_box_callback',
         $public_post_types,
         'normal',
         'high'
     );
-
-    // FAQエディタメタボックス
-    add_meta_box(
-        'gemini_faq_editor',
-        'Gemini FAQ Editor',
-        'gemini_faq_editor_meta_box_callback',
-        $public_post_types,
-        'normal',
-        'default'
-    );
 }
 add_action( 'add_meta_boxes', 'gemini_faq_add_meta_boxes' );
 
-// プロンプト設定メタボックスのコンテンツを表示
-function gemini_faq_prompt_meta_box_callback( $post ) {
+// 統合されたメタボックスのコンテンツを表示
+function gemini_faq_combined_meta_box_callback( $post ) {
     wp_nonce_field( 'gemini_faq_save_meta_box_data', 'gemini_faq_meta_box_nonce' );
 
+    // プロンプト設定部分
     $selected_prompt = get_post_meta( $post->ID, '_gemini_faq_prompt_select', true );
     if ( empty( $selected_prompt ) ) {
         $selected_prompt = 'site_default';
@@ -416,6 +407,8 @@ function gemini_faq_prompt_meta_box_callback( $post ) {
         'seo' => 'SEOライク',
     );
 
+    echo '<div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">';
+    echo '<h3>プロンプト設定</h3>';
     echo '<p>この記事のFAQを生成する際のプロンプトを選択します。</p>';
     echo '<select name="gemini_faq_prompt_select_per_post" id="gemini_faq_prompt_select_per_post" style="width:100%;">';
     
@@ -428,12 +421,12 @@ function gemini_faq_prompt_meta_box_callback( $post ) {
         echo '<option value="' . esc_attr( $key ) . '"' . selected( $selected_prompt, $key, false ) . '>' . esc_html( $title ) . '</option>';
     }
     echo '</select>';
-}
+    echo '</div>';
 
-// FAQ編集メタボックスのコンテンツを表示
-function gemini_faq_editor_meta_box_callback( $post ) {
+    // FAQエディタ部分
     $faq_content = get_post_meta( $post->ID, '_gemini_faq_content', true );
 
+    echo '<h3>FAQエディタ</h3>';
     echo '<p>AIが生成したFAQはここに表示され、手動で編集・保存できます。</p>';
     echo '<textarea name="gemini_faq_content" id="gemini_faq_content_textarea" style="width:100%; height:250px;">' . esc_textarea( $faq_content ) . '</textarea>';
     echo '<div style="margin-top:10px;">';
