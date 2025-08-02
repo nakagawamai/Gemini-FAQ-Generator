@@ -404,6 +404,7 @@ function gemini_faq_combined_meta_box_callback( $post ) {
     echo '<h3>FAQ表示設定</h3>';
     echo '<label for="gemini_faq_enabled"><input type="checkbox" name="gemini_faq_enabled" id="gemini_faq_enabled" value="yes" ' . $checked . ' /> この投稿でFAQを表示する</label>';
     echo '<p class="description">チェックを入れると、この投稿の最後にFAQが自動的に表示されます。</p>';
+    echo '<p class="description">FAQを好きな位置に表示したい場合は、本文中の段落に <code>[gemini_faq]</code> と入力してください。テキストでもショートコードブロックでもOKです。自動挿入は無効になります。</p>';
     echo '</div>';
 
     // プロンプト設定部分
@@ -443,11 +444,10 @@ function gemini_faq_combined_meta_box_callback( $post ) {
     echo '<p>AIが生成したFAQはここに表示され、手動で編集・保存できます。</p>';
     echo '<textarea name="gemini_faq_content" id="gemini_faq_content_textarea" style="width:100%; height:250px;">' . esc_textarea( $faq_content ) . '</textarea>';
     echo '<div style="margin-top:10px;">';
-    echo '<button type="button" id="gemini_faq_regenerate_button" class="button">FAQを再生成する</button>';
+    echo '<button type="button" id="gemini_faq_regenerate_button" class="button">FAQを生成する</button>';
     echo '<span id="gemini_faq_spinner" class="spinner" style="float:none; margin-left: 5px;"></span>';
     echo '</div>';
-    echo '<p class="description">注意: 「FAQを再生成する」ボタンを押すと、現在の編集内容は破棄され、新しいFAQが生成されます。</p>';
-    echo '<p class="description">ヒント: <code>[gemini_faq]</code> を本文中に入れると任意の位置に表示されます。</p>';
+    echo '<p class="description">注意: 「FAQを生成する」ボタンを押すと、現在の編集内容は破棄され、新しいFAQが生成されます。生成後、保存ボタンを押してください。</p>';
 }
 
 // 両方のメタボックスのデータを保存
