@@ -1,5 +1,5 @@
 /* FAQ全体のコンテナ */
-#gemini-faq-container {
+#gemini-faq-container, .gemini-faq-wrapper {
     width: 100%;
     margin: 20px auto;
     border-top: 1px solid #e0e0e0;

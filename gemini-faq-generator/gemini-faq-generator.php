@@ -32,7 +32,7 @@ register_deactivation_hook( __FILE__, 'gemini_faq_generator_deactivate' );
 function gemini_faq_shortcode( $atts ) {
     global $post;
     $post_id = isset( $post->ID ) ? $post->ID : 0;
-    $output = '<h3>FAQ</h3>';    // まず、手動で編集・保存されたFAQコンテンツを試す
+    $output = '<div class="gemini-faq-wrapper"><h3>FAQ</h3>';    // まず、手動で編集・保存されたFAQコンテンツを試す
     $manual_faq_content = get_post_meta( $post_id, '_gemini_faq_content', true );
     if ( ! empty( $manual_faq_content ) ) {        // テキストをパースしてHTMLを生成        
         $faqs = gemini_faq_parse_text_to_array( $manual_faq_content );
@@ -49,6 +49,7 @@ function gemini_faq_shortcode( $atts ) {
     if ( ! empty( $json_ld ) ) {
         $output .= '<script type="application/ld+json">' . $json_ld . '</script>';
     }
+    $output .= '</div>';
     return $output;
 }
 
