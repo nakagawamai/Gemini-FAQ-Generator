@@ -1,55 +1,83 @@
-/* FAQアコーディオンの全体的なコンテナ */
-.faq-accordion {
+/* FAQ全体のコンテナ */
+#gemini-faq-container {
     width: 100%;
-    margin: 0 auto;
-    border-top: 1px solid #ccc; /* 最初のアコーディオン項目の上部に枠線 */
+    margin: 20px auto;
+    border-top: 1px solid #e0e0e0;
 }
 
-/* 各FAQ項目 */
-.faq-item {
-    border-bottom: 1px solid #ccc; /* 各アコーディオン項目の下部に枠線 */
-    border-radius: 0; /* 角の丸みなし */
+/* 各FAQ項目 (<details>タグ) */
+.gemini-faq-item, details {
+    border-bottom: 1px solid #e0e0e0;
 }
 
-/* 質問部分のボタン */
-.faq-question-button {
-    background-color: #eeeeee; /* 質問部分の背景色：薄いグレー */
+/* 質問部分 (<summary>タグ) */
+.gemini-faq-question, summary {
+    background-color: #f7f7f7; /* 背景色を少しだけつける */
     color: #333;
-    padding: 15px 20px;
+    padding: 18px 20px;
     width: 100%;
     text-align: left;
-    border: none; /* ボタンのデフォルトの枠線を削除 */
+    border: none;
     cursor: pointer;
-    display: flex;
-    justify-content: space-between; /* 質問テキストとアイコンを左右に配置 */
-    align-items: center; /* 垂直方向中央揃え */
     font-size: 1.1em;
     font-weight: bold;
-    box-sizing: border-box; /* paddingをwidthに含める */
-    transition: background-color 0.2s ease; /* ホバー時のアニメーション */
+    list-style: none; /* マーカーを非表示 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
 }
 
-.faq-question-button:hover {
-    background-color: #e0e0e0; /* ホバー時の背景色 */
+/* summaryタグのデフォルトのマーカーを非表示にする */
+.gemini-faq-question::-webkit-details-marker, 
+summary::-webkit-details-marker {
+    display: none;
 }
 
-/* トグルアイコン */
-.faq-toggle-icon {
-    font-size: 1.5em; /* アイコンのサイズ */
-    font-weight: normal; /* アイコンの太さ */
+.gemini-faq-question:hover, summary:hover {
+    background-color: #eeeeee;
+}
+
+/* 開閉アイコンのスタイル */
+.gemini-faq-question::after, summary::after {
+    content: '+';
+    font-size: 1.6em;
+    font-weight: normal;
     margin-left: 10px;
-    line-height: 1; /* アイコンの行の高さを調整 */
+    line-height: 1;
+    color: #777;
+    transition: transform 0.2s ease;
 }
 
-/* 回答内容のコンテナ */
-.faq-answer-content {
-    background-color: #fafafa; /* 回答部分の背景色：ほぼ白 */
-    max-height: 0; /* 初期状態では非表示 */
-    overflow: hidden; /* 内容がはみ出さないように隠す */
-    transition: max-height 0.3s ease-out; /* paddingのトランジションを削除 */
+/* detailsが開いている時のアイコン */
+details[open] > summary::after {
+    content: '−';
+    transform: rotate(180deg);
 }
 
-/* アクティブ（開いている）状態のスタイル */
-.faq-item.active .faq-answer-content {
-    padding: 15px 20px; /* 開いた時のパディング (上 右 下 左) */
+/* 回答部分 (<div>) */
+.gemini-faq-answer, .gemini-faq-item > div {
+    background-color: #ffffff; /* 回答の背景は白 */
+    padding: 0 20px; /* 初期パディングは左右のみ */
+    overflow: hidden;
+}
+
+/* detailsが開いている時の回答部分 */
+details[open] > .gemini-faq-answer, 
+details[open] > div {
+    padding: 20px 20px 25px 20px;
+}
+
+.gemini-faq-answer p, .gemini-faq-item > div p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* エラーメッセージ */
+.gemini-faq-error {
+    color: #d9534f;
+    padding: 15px;
+    border: 1px solid #d9534f;
+    background-color: #f2dede;
+    border-radius: 4px;
 }
