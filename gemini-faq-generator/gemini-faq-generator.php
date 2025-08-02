@@ -29,7 +29,92 @@ function gemini_faq_generator_deactivate() {
 register_deactivation_hook( __FILE__, 'gemini_faq_generator_deactivate' );
 
 // ショートコードの登録
-function gemini_faq_shortcode( $atts ) {    global $post;    $post_id = isset( $post->ID ) ? $post->ID : 0;    $output = '<h3>FAQ</h3>';    // まず、手動で編集・保存されたFAQコンテンツを試す    $manual_faq_content = get_post_meta( $post_id, '_gemini_faq_content', true );    if ( ! empty( $manual_faq_content ) ) {        // テキストをパースしてHTMLを生成        $faqs = gemini_faq_parse_text_to_array( $manual_faq_content );        if ( ! empty( $faqs ) ) {            $output .= '<div class="gemini-faq-item">' . gemini_faq_render_html( $faqs ) . '</div>';            // JSON-LDも生成して出力            $output .= gemini_faq_generate_json_ld( $faqs );            return $output;        }    }    // 手動のFAQがない場合、従来通りAJAXで読み込む    $output .= '<div id="gemini-faq-container" data-post-id="' . esc_attr( $post_id ) . '">FAQを読み込み中...</div>';    // 構造化データ (JSON-LD) を出力    $json_ld = get_post_meta( $post_id, '_gemini_faq_json_ld', true );    if ( ! empty( $json_ld ) ) {        $output .= '<script type="application/ld+json">' . $json_ld . '</script>';    }    return $output;}// テキストをFAQ配列にパースするヘルパー関数function gemini_faq_parse_text_to_array( $text ) {    $faqs = array();    $lines = explode( "\n", trim( $text ) );    $current_question = '';    $current_answer = '';    foreach ( $lines as $line ) {        $line = trim( $line );        if ( empty( $line ) ) continue;        if ( strpos( $line, 'Q:' ) === 0 ) {            if ( ! empty( $current_question ) ) {                $faqs[] = array( 'question' => trim( $current_question ), 'answer' => trim( $current_answer ) );            }            $current_question = substr( $line, 2 );            $current_answer = '';        } elseif ( strpos( $line, 'A:' ) === 0 ) {            $current_answer .= substr( $line, 2 );        } else {            $current_answer .= ' ' . $line;        }    }    if ( ! empty( $current_question ) ) {        $faqs[] = array( 'question' => trim( $current_question ), 'answer' => trim( $current_answer ) );    }    return $faqs;}// FAQ配列をHTMLにレンダリングするヘルパー関数function gemini_faq_render_html( $faqs ) {    $html = '';    foreach ( $faqs as $faq ) {        $html .= '<details>';        $html .= '<summary>' . esc_html( $faq['question'] ) . '</summary>';        $html .= '<p>' . nl2br( esc_html( $faq['answer'] ) ) . '</p>';        $html .= '</details>';    }    return $html;}// FAQ配列からJSON-LDを生成するヘルパー関数function gemini_faq_generate_json_ld( $faqs ) {    $json_ld_data = array(        '@context' => 'https://schema.org',        '@type' => 'FAQPage',        'mainEntity' => array(),    );    foreach ( $faqs as $faq ) {        $json_ld_data['mainEntity'][] = array(            '@type' => 'Question',            'name' => $faq['question'],            'acceptedAnswer' => array(                '@type' => 'Answer',                'text' => $faq['answer'],            ),        );    }    return '<script type="application/ld+json">' . json_encode( $json_ld_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>';}
+function gemini_faq_shortcode( $atts ) {
+    global $post;
+    $post_id = isset( $post->ID ) ? $post->ID : 0;
+    $output = '<h3>FAQ</h3>';    // まず、手動で編集・保存されたFAQコンテンツを試す
+    $manual_faq_content = get_post_meta( $post_id, '_gemini_faq_content', true );
+    if ( ! empty( $manual_faq_content ) ) {        // テキストをパースしてHTMLを生成        
+        $faqs = gemini_faq_parse_text_to_array( $manual_faq_content );
+        if ( ! empty( $faqs ) ) {
+            $output .= '<div class="gemini-faq-item">' . gemini_faq_render_html( $faqs ) . '</div>';
+            // JSON-LDも生成して出力
+            $output .= gemini_faq_generate_json_ld( $faqs );
+            return $output;        
+        }    
+    }    // 手動のFAQがない場合、従来通りAJAXで読み込む
+    $output .= '<div id="gemini-faq-container" data-post-id="' . esc_attr( $post_id ) . '">FAQを読み込み中...</div>';
+    // 構造化データ (JSON-LD) を出力
+    $json_ld = get_post_meta( $post_id, '_gemini_faq_json_ld', true );
+    if ( ! empty( $json_ld ) ) {
+        $output .= '<script type="application/ld+json">' . $json_ld . '</script>';
+    }
+    return $output;
+}
+
+// テキストをFAQ配列にパースするヘルパー関数
+function gemini_faq_parse_text_to_array( $text ) {
+    $faqs = array();
+    $lines = explode( "\n", trim( $text ) );
+    $current_question = '';
+    $current_answer = '';
+    foreach ( $lines as $line ) {
+        $line = trim( $line );
+        if ( empty( $line ) ) continue;
+        if ( strpos( $line, 'Q:' ) === 0 ) {
+            if ( ! empty( $current_question ) ) {
+                $faqs[] = array( 'question' => trim( $current_question ), 'answer' => trim( $current_answer ) );
+            }
+            $current_question = substr( $line, 2 );
+            $current_answer = '';
+        } elseif ( strpos( $line, 'A:' ) === 0 ) {
+                $current_answer .= substr( $line, 2 );
+        } else {
+            $current_answer .= ' ' . $line;
+        }    
+    }
+    
+    if ( ! empty( $current_question ) ) {
+        $faqs[] = array( 'question' => trim( $current_question ), 'answer' => trim( $current_answer ) );
+    }
+    
+    return $faqs;
+}
+
+// FAQ配列をHTMLにレンダリングするヘルパー関数
+function gemini_faq_render_html( $faqs ) {
+    $html = '';    
+    foreach ( $faqs as $faq ) {
+        $html .= '<details>';
+        $html .= '<summary>' . esc_html( $faq['question'] ) . '</summary>';
+        $html .= '<p>' . nl2br( esc_html( $faq['answer'] ) ) . '</p>';
+        $html .= '</details>';    
+    }
+    return $html;
+}
+            
+// FAQ配列からJSON-LDを生成するヘルパー関数
+function gemini_faq_generate_json_ld( $faqs ) {
+    $json_ld_data = array(
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => array(),    
+    );
+    
+    foreach ( $faqs as $faq ) {
+        $json_ld_data['mainEntity'][] = array(
+            '@type' => 'Question',
+            'name' => $faq['question'],
+            'acceptedAnswer' => array(
+                '@type' => 'Answer',
+                'text' => $faq['answer'],
+            ),
+        );    
+    }    
+    
+    return '<script type="application/ld+json">' . json_encode( $json_ld_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>';
+}
+
 add_shortcode( 'gemini_faq', 'gemini_faq_shortcode' );
 
 // JavaScriptファイルの読み込み
@@ -359,22 +444,30 @@ function gemini_faq_editor_meta_box_callback( $post ) {
 
 // 両方のメタボックスのデータを保存
 function gemini_faq_save_meta_box_data( $post_id ) {
+    // ノンスを検証
     if ( ! isset( $_POST['gemini_faq_meta_box_nonce'] ) || ! wp_verify_nonce( $_POST['gemini_faq_meta_box_nonce'], 'gemini_faq_save_meta_box_data' ) ) {
         return;
     }
+
+    // 自動保存の場合は何もしない
     if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
         return;
     }
+
+    // ユーザー権限をチェック
     if ( ! current_user_can( 'edit_post', $post_id ) ) {
         return;
     }
 
+    // プロンプト設定を保存
     if ( isset( $_POST['gemini_faq_prompt_select_per_post'] ) ) {
         $prompt_data = sanitize_key( $_POST['gemini_faq_prompt_select_per_post'] );
         update_post_meta( $post_id, '_gemini_faq_prompt_select', $prompt_data );
     }
 
+    // FAQ編集内容を保存
     if ( isset( $_POST['gemini_faq_content'] ) ) {
+        // textareaの内容をサニタイズ
         $faq_data = sanitize_textarea_field( $_POST['gemini_faq_content'] );
         update_post_meta( $post_id, '_gemini_faq_content', $faq_data );
     }
@@ -383,10 +476,15 @@ add_action( 'save_post', 'gemini_faq_save_meta_box_data' );
 
 // 管理画面用のスクリプトとAJAXハンドラ
 function gemini_faq_admin_enqueue_scripts($hook) {
+    // 投稿の新規作成または編集ページでのみ動作
     if ( 'post.php' != $hook && 'post-new.php' != $hook ) {
         return;
     }
+
     global $post;
+    $post_id = isset($post->ID) ? $post->ID : 0;
+
+    // メインのJSファイルを読み込む
     wp_enqueue_script(
         'gemini-faq-admin-script',
         plugins_url( 'js/gemini-faq.js', __FILE__ ),
@@ -394,6 +492,8 @@ function gemini_faq_admin_enqueue_scripts($hook) {
         filemtime(plugin_dir_path(__FILE__) . 'js/gemini-faq.js'),
         true
     );
+
+    // AJAX用のデータをJavaScriptに渡す
     wp_localize_script(
         'gemini-faq-admin-script',
         'geminiFaqAdminAjax',
@@ -420,10 +520,14 @@ function gemini_faq_ajax_regenerate_handler() {
     if ( ! $current_page_url ) {
         wp_send_json_error( '投稿のパーマリンクが取得できませんでした。' );
     }
+
+    // 既存のキャッシュを削除して再生成を強制
     $prompt_version = get_option( 'gemini_faq_prompt_version', time() );
     $post_prompt_setting = get_post_meta( $post_id, '_gemini_faq_prompt_select', true );
     $cache_key = 'gemini_faq_' . md5( $current_page_url . $post_id . $prompt_version . $post_prompt_setting );
     delete_transient($cache_key);
+
+    // FAQを生成（この関数は内部でキャッシュと投稿メタを更新する）
     _gemini_faq_generate_and_cache_for_url( $current_page_url, $post_id );
     $new_faq_content = get_post_meta( $post_id, '_gemini_faq_content', true );
     if ( empty( $new_faq_content ) ) {
