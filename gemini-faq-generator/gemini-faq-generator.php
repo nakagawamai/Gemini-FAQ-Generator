@@ -400,6 +400,12 @@ add_action( 'add_meta_boxes', 'gemini_faq_add_meta_boxes' );
 function gemini_faq_combined_meta_box_callback( $post ) {
     wp_nonce_field( 'gemini_faq_save_meta_box_data', 'gemini_faq_meta_box_nonce' );
 
+    echo '<div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">';
+    echo '<h3>FAQ表示設定</h3>';
+    echo '<label for="gemini_faq_enabled"><input type="checkbox" name="gemini_faq_enabled" id="gemini_faq_enabled" value="yes" ' . $checked . ' /> この投稿でFAQを表示する</label>';
+    echo '<p class="description">チェックを入れると、この投稿の最後にFAQが自動的に表示されます。</p>';
+    echo '</div>';
+
     // プロンプト設定部分
     $selected_prompt = get_post_meta( $post->ID, '_gemini_faq_prompt_select', true );
     if ( empty( $selected_prompt ) ) {
@@ -432,14 +438,6 @@ function gemini_faq_combined_meta_box_callback( $post ) {
 
     // FAQエディタ部分
     $faq_content = get_post_meta( $post->ID, '_gemini_faq_content', true );
-    $faq_enabled = get_post_meta( $post->ID, '_gemini_faq_enabled', true );
-    $checked = checked( $faq_enabled, 'yes', false );
-
-    echo '<div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">';
-    echo '<h3>FAQ表示設定</h3>';
-    echo '<label for="gemini_faq_enabled"><input type="checkbox" name="gemini_faq_enabled" id="gemini_faq_enabled" value="yes" ' . $checked . ' /> この投稿でFAQを表示する</label>';
-    echo '<p class="description">チェックを入れると、この投稿の最後にFAQが自動的に表示されます。</p>';
-    echo '</div>';
 
     echo '<h3>FAQエディタ</h3>';
     echo '<p>AIが生成したFAQはここに表示され、手動で編集・保存できます。</p>';
