@@ -63,8 +63,7 @@ details[open] > summary::after {
 }
 
 /* detailsが開いている時の回答部分 */
-details[open] > .gemini-faq-answer, 
-details[open] > div {
+details[open] > .gemini-faq-answer {
     padding: 18px 20px;
 }
 

@@ -37,7 +37,7 @@ function gemini_faq_shortcode( $atts ) {
     if ( ! empty( $manual_faq_content ) ) {        // テキストをパースしてHTMLを生成        
         $faqs = gemini_faq_parse_text_to_array( $manual_faq_content );
         if ( ! empty( $faqs ) ) {
-            $output .= '<div class="gemini-faq-item">' . gemini_faq_render_html( $faqs ) . '</div>';
+            $output .= gemini_faq_render_html( $faqs );
             // JSON-LDも生成して出力
             $output .= gemini_faq_generate_json_ld( $faqs );
             return $output;        
@@ -85,9 +85,9 @@ function gemini_faq_parse_text_to_array( $text ) {
 function gemini_faq_render_html( $faqs ) {
     $html = '';    
     foreach ( $faqs as $faq ) {
-        $html .= '<details>';
-        $html .= '<summary>' . esc_html( $faq['question'] ) . '</summary>';
-        $html .= '<p>' . nl2br( esc_html( $faq['answer'] ) ) . '</p>';
+        $html .= '<details class="gemini-faq-item">'; // 各項目をdetailsで囲む
+        $html .= '<summary class="gemini-faq-question">' . esc_html( $faq['question'] ) . '</summary>';
+        $html .= '<div class="gemini-faq-answer"><p>' . nl2br( esc_html( $faq['answer'] ) ) . '</p></div>'; // 回答をdivで囲む
         $html .= '</details>';    
     }
     return $html;
