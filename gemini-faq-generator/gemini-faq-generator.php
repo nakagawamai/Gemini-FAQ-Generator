@@ -486,7 +486,6 @@ function gemini_faq_save_meta_box_data( $post_id ) {
     $faq_enabled = isset( $_POST['gemini_faq_enabled'] ) ? 'yes' : 'no';
     update_post_meta( $post_id, '_gemini_faq_enabled', $faq_enabled );
 }
-}
 add_action( 'save_post', 'gemini_faq_save_meta_box_data' );
 
 // 管理画面用のスクリプトとAJAXハンドラ
