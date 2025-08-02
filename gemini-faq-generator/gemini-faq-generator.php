@@ -383,8 +383,8 @@ function gemini_faq_add_meta_boxes() {
         'Gemini FAQ プロンプト設定',
         'gemini_faq_prompt_meta_box_callback',
         $public_post_types,
-        'side',
-        'default'
+        'normal',
+        'high'
     );
 
     // FAQエディタメタボックス
@@ -394,7 +394,7 @@ function gemini_faq_add_meta_boxes() {
         'gemini_faq_editor_meta_box_callback',
         $public_post_types,
         'normal',
-        'high'
+        'default'
     );
 }
 add_action( 'add_meta_boxes', 'gemini_faq_add_meta_boxes' );
