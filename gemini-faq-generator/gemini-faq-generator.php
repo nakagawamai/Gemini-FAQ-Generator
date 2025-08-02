@@ -432,6 +432,14 @@ function gemini_faq_combined_meta_box_callback( $post ) {
 
     // FAQエディタ部分
     $faq_content = get_post_meta( $post->ID, '_gemini_faq_content', true );
+    $faq_enabled = get_post_meta( $post->ID, '_gemini_faq_enabled', true );
+    $checked = checked( $faq_enabled, 'yes', false );
+
+    echo '<div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">';
+    echo '<h3>FAQ表示設定</h3>';
+    echo '<label for="gemini_faq_enabled"><input type="checkbox" name="gemini_faq_enabled" id="gemini_faq_enabled" value="yes" ' . $checked . ' /> この投稿でFAQを表示する</label>';
+    echo '<p class="description">チェックを入れると、この投稿の最後にFAQが自動的に表示されます。</p>';
+    echo '</div>';
 
     echo '<h3>FAQエディタ</h3>';
     echo '<p>AIが生成したFAQはここに表示され、手動で編集・保存できます。</p>';
@@ -441,6 +449,7 @@ function gemini_faq_combined_meta_box_callback( $post ) {
     echo '<span id="gemini_faq_spinner" class="spinner" style="float:none; margin-left: 5px;"></span>';
     echo '</div>';
     echo '<p class="description">注意: 「FAQを再生成する」ボタンを押すと、現在の編集内容は破棄され、新しいFAQが生成されます。</p>';
+    echo '<p class="description">ヒント: <code>[gemini_faq]</code> を本文中に入れると任意の位置に表示されます。</p>';
 }
 
 // 両方のメタボックスのデータを保存
@@ -472,6 +481,11 @@ function gemini_faq_save_meta_box_data( $post_id ) {
         $faq_data = sanitize_textarea_field( $_POST['gemini_faq_content'] );
         update_post_meta( $post_id, '_gemini_faq_content', $faq_data );
     }
+
+    // FAQ表示設定を保存
+    $faq_enabled = isset( $_POST['gemini_faq_enabled'] ) ? 'yes' : 'no';
+    update_post_meta( $post_id, '_gemini_faq_enabled', $faq_enabled );
+}
 }
 add_action( 'save_post', 'gemini_faq_save_meta_box_data' );
 
@@ -556,6 +570,40 @@ function gemini_faq_ajax_regenerate_handler() {
     wp_send_json_success( array( 'faq_content' => $new_faq_content ) );
 }
 add_action( 'wp_ajax_gemini_faq_regenerate', 'gemini_faq_ajax_regenerate_handler' );
+
+/**
+ * 投稿コンテンツの最後にFAQを自動挿入する
+ * ただし、ショートコードが本文中に存在する場合は挿入しない
+ * @param string $content 投稿コンテンツ
+ * @return string 変更された投稿コンテンツ
+ */
+function gemini_faq_auto_insert_to_content( $content ) {
+    // 管理画面、RSSフィード、またはメインクエリでない場合は処理しない
+    if ( is_admin() || is_feed() || ! is_main_query() || ! is_singular() ) {
+        return $content;
+    }
+
+    global $post;
+    $post_id = $post->ID;
+
+    // FAQ表示が有効になっているかチェック
+    $faq_enabled = get_post_meta( $post_id, '_gemini_faq_enabled', true );
+    if ( $faq_enabled !== 'yes' ) {
+        return $content;
+    }
+
+    // 投稿コンテンツにショートコードが既に存在するかチェック
+    if ( has_shortcode( $content, 'gemini_faq' ) ) {
+        return $content; // ショートコードがある場合は自動挿入しない
+    }
+
+    // ショートコードの出力を取得
+    $faq_output = do_shortcode( '[gemini_faq]' );
+
+    // 投稿コンテンツの最後にFAQを挿入
+    return $content . $faq_output;
+}
+add_filter( 'the_content', 'gemini_faq_auto_insert_to_content' );
 
 // プラグイン設定ページ（APIキー入力用）
 function gemini_faq_settings_page() {
